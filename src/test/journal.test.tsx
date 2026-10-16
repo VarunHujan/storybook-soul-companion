@@ -16,6 +16,9 @@ describe("Single browser-saved conversation book", () => {
     expect(readBook()).toEqual([]);
   });
   it("keeps each question on the spread with its corresponding answer", () => {
-    expect(getSpreads(messages).map(s => [s.question.id, s.answer?.id])).toEqual([["q1", "a1"], ["q2", "a2"]]);
+    expect(getSpreads(messages).map((s) => [s.question.id, s.answer?.id])).toEqual([
+      ["q1", "a1"],
+      ["q2", "a2"],
+    ]);
   });
 });
