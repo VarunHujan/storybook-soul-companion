@@ -45,6 +45,15 @@ export function createResponsesCall(
   return {
     result,
     response: (messages: UIMessage[]) =>
-      withLovableAiGatewayRunIdHeader(result.toUIMessageStreamResponse({ originalMessages: messages, sendReasoning: true, onFinish: () => {}, onError: error => error instanceof Error ? error.message : "The answer could not be written." }), runIdFetch),
+      withLovableAiGatewayRunIdHeader(
+        result.toUIMessageStreamResponse({
+          originalMessages: messages,
+          sendReasoning: true,
+          onFinish: () => {},
+          onError: (error) =>
+            error instanceof Error ? error.message : "The answer could not be written.",
+        }),
+        runIdFetch,
+      ),
   };
 }
