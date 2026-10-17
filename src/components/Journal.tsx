@@ -142,9 +142,9 @@ export function Journal() {
         setPage(next);
         setDraft("");
         setMobilePage("question");
-      }, 370),
+      }, 420),
     );
-    timers.current.push(setTimeout(() => setTurning(false), 900));
+    timers.current.push(setTimeout(() => setTurning(false), 850));
   };
   const submit = ({ text }: { text: string }) => {
     if (!text.trim() || busy || turning) return;

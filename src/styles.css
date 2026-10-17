@@ -487,21 +487,19 @@ button {
   right: -60px;
 }
 .is-turning .book-pages {
-  animation: page-content-turn 0.9s both;
+  animation: page-content-turn 0.85s both;
 }
 .is-turning .book-canvas {
   z-index: 6;
 }
 @keyframes page-content-turn {
-  0% {
-    opacity: 1;
-  }
-  20%,
-  65% {
-    opacity: 0;
-  }
+  0%,
   100% {
     opacity: 1;
+  }
+  30%,
+  70% {
+    opacity: 0;
   }
 }
 .below-book {
