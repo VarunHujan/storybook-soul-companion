@@ -12,7 +12,7 @@ function Pages({ turn, colors }: { turn: number; colors: { paper: string; cover:
   const { geometry, baseX } = useMemo(() => {
     const geo = new PlaneGeometry(5.7, 6.5, 16, 2);
     geo.translate(2.85, 0, 0);
-    const pos = geo.attributes["position"];
+    const pos = geo.attributes["position"]!;
     const xs = new Float32Array(pos.count);
     for (let i = 0; i < pos.count; i++) xs[i] = pos.getX(i);
     return { geometry: geo, baseX: xs };
@@ -40,7 +40,7 @@ function Pages({ turn, colors }: { turn: number; colors: { paper: string; cover:
         const arr = pos.array as Float32Array;
         const bend = Math.sin(t * Math.PI) * 0.65;
         for (let i = 0; i < pos.count; i++)
-          arr[i * 3 + 2] = Math.sin((baseX[i] / 5.7) * Math.PI) * bend;
+          arr[i * 3 + 2] = Math.sin((baseX[i]! / 5.7) * Math.PI) * bend;
         pos.needsUpdate = true;
       }
     }
