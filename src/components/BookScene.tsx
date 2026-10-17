@@ -9,10 +9,13 @@ function Pages({ turn, colors }: { turn: number; colors: { paper: string; cover:
   const pivot = useRef<Group>(null);
   const progress = useRef(1);
   const { size, camera } = useThree();
-  const geometry = useMemo(() => {
-    const geo = new PlaneGeometry(5.7, 6.5, 32, 4);
+  const { geometry, baseX } = useMemo(() => {
+    const geo = new PlaneGeometry(5.7, 6.5, 16, 2);
     geo.translate(2.85, 0, 0);
-    return geo;
+    const pos = geo.attributes["position"]!;
+    const xs = new Float32Array(pos.count);
+    for (let i = 0; i < pos.count; i++) xs[i] = pos.getX(i);
+    return { geometry: geo, baseX: xs };
   }, []);
   useEffect(() => {
     camera.zoom = Math.min(size.width / 12, size.height / 7);
@@ -26,6 +29,7 @@ function Pages({ turn, colors }: { turn: number; colors: { paper: string; cover:
   }, [turn]);
   useEffect(() => () => geometry.dispose(), [geometry]);
   useFrame((_, delta) => {
+    if (progress.current >= 1) return;
     progress.current = Math.min(1, progress.current + Math.min(delta, 0.05) / 0.85);
     const t = progress.current;
     if (pivot.current) {
@@ -33,10 +37,11 @@ function Pages({ turn, colors }: { turn: number; colors: { paper: string; cover:
       pivot.current.rotation.y = -(t * t * (3 - 2 * t)) * Math.PI;
       const pos = geometry.attributes["position"];
       if (pos) {
+        const arr = pos.array as Float32Array;
+        const bend = Math.sin(t * Math.PI) * 0.65;
         for (let i = 0; i < pos.count; i++)
-          pos.setZ(i, Math.sin((pos.getX(i) / 5.7) * Math.PI) * Math.sin(t * Math.PI) * 0.65);
+          arr[i * 3 + 2] = Math.sin((baseX[i]! / 5.7) * Math.PI) * bend;
         pos.needsUpdate = true;
-        geometry.computeVertexNormals();
       }
     }
   });
