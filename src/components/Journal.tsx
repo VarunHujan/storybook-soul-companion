@@ -113,7 +113,9 @@ export function Journal() {
   const [turnSnapshot, setTurnSnapshot] = useState<TurnSnapshot | null>(null);
   const pagesRef = useRef<HTMLDivElement>(null);
   const turnLock = useRef(false);
+  const turnTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const finishTurn = useCallback(() => {
+    clearTimeout(turnTimer.current);
     turnLock.current = false;
     setTurning(false);
     setTurnSnapshot(null);
@@ -155,7 +157,8 @@ export function Journal() {
       setTurning(true);
       setTurnSnapshot({ direction, front: copyPage(front), stationary: copyPage(stationary) });
       // Fallback for a background tab or an interrupted CSS animation.
-      timers.current.push(setTimeout(finishTurn, 1200));
+      turnTimer.current = setTimeout(finishTurn, 1200);
+      timers.current.push(turnTimer.current);
     }
     setPage(next);
     setDraft("");
