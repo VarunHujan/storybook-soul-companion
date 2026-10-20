@@ -1,6 +1,6 @@
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -47,6 +47,7 @@ import {
 } from "@/components/ai-elements/prompt-input";
 import { Shimmer } from "@/components/ai-elements/shimmer";
 import { BookScene } from "./BookScene";
+import { copyPage, PageTurn, type TurnSnapshot } from "./PageTurn";
 import { getSpreads, messageText, readBook, STORAGE_KEY, type BookTheme } from "@/lib/journal";
 
 const themes: { id: BookTheme; title: string; short: string; caption: string }[] = [
@@ -108,8 +109,17 @@ export function Journal() {
   const [page, setPage] = useState(
     initialMessages.length ? getSpreads(initialMessages).length - 1 : 0,
   );
-  const [turn, setTurn] = useState(0);
   const [turning, setTurning] = useState(false);
+  const [turnSnapshot, setTurnSnapshot] = useState<TurnSnapshot | null>(null);
+  const pagesRef = useRef<HTMLDivElement>(null);
+  const turnLock = useRef(false);
+  const turnTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const finishTurn = useCallback(() => {
+    clearTimeout(turnTimer.current);
+    turnLock.current = false;
+    setTurning(false);
+    setTurnSnapshot(null);
+  }, []);
   const [draft, setDraft] = useState("");
   const [mobilePage, setMobilePage] = useState("question");
   const [clearOpen, setClearOpen] = useState(false);
@@ -134,17 +144,25 @@ export function Journal() {
   }, [busy, page, clearOpen, mobilePage]);
   useEffect(() => () => timers.current.forEach(clearTimeout), []);
   const flip = (next: number) => {
-    if (turning || busy || next < 0 || next > spreads.length) return;
-    setTurning(true);
-    setTurn((t) => t + 1);
-    timers.current.push(
-      setTimeout(() => {
-        setPage(next);
-        setDraft("");
-        setMobilePage("question");
-      }, 420),
+    if (turnLock.current || busy || next === page || next < 0 || next > spreads.length) return;
+    const direction = next > page ? "forward" : "backward";
+    const front = pagesRef.current?.querySelector<HTMLElement>(
+      direction === "forward" ? ".right-page" : ".left-page",
     );
-    timers.current.push(setTimeout(() => setTurning(false), 850));
+    const stationary = pagesRef.current?.querySelector<HTMLElement>(
+      direction === "forward" ? ".left-page" : ".right-page",
+    );
+    if (front && stationary && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      turnLock.current = true;
+      setTurning(true);
+      setTurnSnapshot({ direction, front: copyPage(front), stationary: copyPage(stationary) });
+      // Fallback for a background tab or an interrupted CSS animation.
+      turnTimer.current = setTimeout(finishTurn, 1200);
+      timers.current.push(turnTimer.current);
+    }
+    setPage(next);
+    setDraft("");
+    setMobilePage("question");
   };
   const submit = ({ text }: { text: string }) => {
     if (!text.trim() || busy || turning) return;
@@ -252,9 +270,9 @@ export function Journal() {
           }}
         >
           <div className="book-cover" />
-          <BookScene turn={turn} theme={theme} />
+          <BookScene theme={theme} />
           <div className="page-edges" />
-          <div className={`book-pages show-${mobilePage}`}>
+          <div ref={pagesRef} className={`book-pages show-${mobilePage}`} inert={turning}>
             <article className="book-page left-page">
               <div className="page-topline">
                 <span>THE QUESTION</span>
@@ -479,6 +497,7 @@ export function Journal() {
               </Tooltip>
             </article>
           </div>
+          {turnSnapshot && <PageTurn snapshot={turnSnapshot} pages={pagesRef.current} onComplete={finishTurn} />}
           <Button
             variant="ghost"
             size="icon"
@@ -577,7 +596,7 @@ export function Journal() {
                   setDraft("");
                   clearError();
                   setClearOpen(false);
-                  setTurn((t) => t + 1);
+                  finishTurn();
                 }}
               >
                 Start a new book
