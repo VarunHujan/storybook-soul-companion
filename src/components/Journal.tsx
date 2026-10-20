@@ -10,6 +10,7 @@ import {
   Copy,
   Feather,
   Leaf,
+  LibraryBig,
   Plus,
   RotateCcw,
   ShieldCheck,
@@ -49,6 +50,8 @@ import { Shimmer } from "@/components/ai-elements/shimmer";
 import { BookScene } from "./BookScene";
 import { copyPage, PageTurn, type TurnSnapshot } from "./PageTurn";
 import { getSpreads, messageText, readBook, STORAGE_KEY, type BookTheme } from "@/lib/journal";
+import { FlyingBook, Library, LibraryBackground, type BookFlight } from "./Library";
+import { selectLibraryBook } from "@/lib/library";
 
 const themes: { id: BookTheme; title: string; short: string; caption: string }[] = [
   {
@@ -82,6 +85,10 @@ function InkFeather() {
 }
 
 export function Journal() {
+  const [showLibrary, setShowLibrary] = useState(true);
+  const [flight, setFlight] = useState<BookFlight | null>(null);
+  const [flightTarget, setFlightTarget] = useState<DOMRect | null>(null);
+  const stageRef = useRef<HTMLElement>(null);
   const [theme, setTheme] = useState<BookTheme>("parchment");
   const [mock, setMock] = useState(true);
   const mockRef = useRef(mock);
@@ -127,6 +134,7 @@ export function Journal() {
   const textarea = useRef<HTMLTextAreaElement>(null);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const busy = status === "submitted" || status === "streaming";
+  const opening = flight !== null;
   const spread = spreads[page];
   const answer = spread?.answer;
   const isNew = !spread;
@@ -139,9 +147,16 @@ export function Journal() {
     }
   }, [messages]);
   useEffect(() => {
-    if (!busy && !clearOpen && mobilePage === "question")
+    if (!showLibrary && !opening && !busy && !clearOpen && mobilePage === "question")
       textarea.current?.focus({ preventScroll: true });
-  }, [busy, page, clearOpen, mobilePage]);
+  }, [busy, page, clearOpen, mobilePage, showLibrary, opening]);
+  useEffect(() => {
+    if (!flight) return;
+    const target = stageRef.current?.getBoundingClientRect();
+    if (target) setFlightTarget(target);
+    const timer = setTimeout(() => { setFlight(null); setFlightTarget(null); }, 1500);
+    return () => clearTimeout(timer);
+  }, [flight]);
   useEffect(() => () => timers.current.forEach(clearTimeout), []);
   const flip = (next: number) => {
     if (turnLock.current || busy || next === page || next < 0 || next > spreads.length) return;
@@ -184,7 +199,8 @@ export function Journal() {
   const pointer = useRef(0);
   return (
     <TooltipProvider delayDuration={250}>
-      <main className={`folio-app theme-${theme}`}>
+      <main className={`folio-app theme-${theme} ${showLibrary ? "is-library" : "is-reading"} ${opening ? "is-opening" : ""}`}>
+        <LibraryBackground />
         <header className="app-header">
           <a href="/" className="brand" aria-label="Folio home">
             <span className="brand-mark">
@@ -197,6 +213,7 @@ export function Journal() {
             <span className="brand-description">A conversation, unfolding.</span>
           </a>
           <div className="header-actions">
+            {!showLibrary && <Button variant="ghost" className="library-return" disabled={busy || turning || opening} onClick={() => { finishTurn(); setShowLibrary(true); }}><LibraryBig size={16} /> Library</Button>}
             <div className="demo-control">
               <span className="status-dot" />
               <label htmlFor="demo-mode">Demo mode</label>
@@ -213,6 +230,18 @@ export function Journal() {
             </Button>
           </div>
         </header>
+        {showLibrary ? <Library onSelect={(selection) => {
+          const next = selectLibraryBook(selection.book.id);
+          if (!next || busy) return;
+          finishTurn();
+          setTheme(next.theme);
+          setPage(next.page);
+          setMobilePage(next.mobilePage);
+          setDraft("");
+          setShowLibrary(false);
+          if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) setFlight(selection);
+          window.scrollTo({ top: 0, behavior: "instant" });
+        }} /> : <div className="reading-view" inert={opening}>
         <section className="journal-heading">
           <div className="eyebrow">
             <span /> YOUR THOUGHTS, BOUND TOGETHER <span />
@@ -258,6 +287,7 @@ export function Journal() {
           </Button>
         </div>
         <section
+          ref={stageRef}
           className={`book-stage ${turning ? "is-turning" : ""}`}
           aria-label="Open conversation book"
           onPointerDown={(e) => {
@@ -570,6 +600,8 @@ export function Journal() {
             ))}
           </div>
         </section>
+        </div>}
+        {flight && flightTarget && <FlyingBook flight={flight} target={flightTarget} onComplete={() => { setFlight(null); setFlightTarget(null); }} />}
         <footer className="app-footer">
           <span>Made for the wandering mind.</span>
           <span>

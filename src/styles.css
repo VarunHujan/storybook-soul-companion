@@ -53,6 +53,16 @@
   --scene-cover: rgb(44, 54, 44);
   --heading-font: "Cormorant Garamond", Georgia, serif;
   --body-font: "DM Sans", sans-serif;
+  --library-shade: oklch(0.12 0.012 165 / 0.68);
+  --library-header: oklch(0.12 0.012 165 / 0.9);
+  --library-shelf: oklch(0.25 0.014 65);
+  --cover-forest: oklch(0.29 0.045 157);
+  --cover-wine: oklch(0.32 0.07 20);
+  --cover-sage: oklch(0.46 0.045 145);
+  --cover-teal: oklch(0.32 0.06 195);
+  --cover-ochre: oklch(0.47 0.08 79);
+  --cover-blue: oklch(0.33 0.045 250);
+  --cover-foil: oklch(0.84 0.07 83);
 }
 * {
   box-sizing: border-box;
@@ -75,12 +85,71 @@ button {
   cursor: pointer;
 }
 .folio-app {
+  position: relative;
+  isolation: isolate;
   min-height: 100vh;
   background: radial-gradient(ellipse at 50% 42%, oklch(0.265 0.02 157), var(--background) 70%);
   transition:
     background 0.7s,
     color 0.5s;
   overflow: hidden;
+}
+.library-background { position: fixed; inset: 0; z-index: -1; pointer-events: none; }
+.library-background img { width: 100%; height: 100%; object-fit: cover; }
+.library-scrim { position: absolute; inset: 0; background: var(--library-shade); transition: background 0.7s; }
+.is-reading .library-scrim { background: var(--library-shade); }
+.app-header, .app-footer { background: var(--library-header); }
+.app-header { padding: 0 20px; }
+.app-footer { padding: 0 20px; }
+.library-view { min-height: calc(100vh - 155px); padding: 35px 36px 48px; }
+.library-heading { text-align: center; margin-bottom: 38px; }
+.library-heading h1 { font-family: var(--heading-font); font-size: 52px; font-weight: 400; margin: 8px 0; }
+.library-heading p { color: var(--foreground); font-size: 12px; margin: 0; }
+.library-shelves { max-width: 1080px; margin: auto; }
+.library-shelf { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 24px; padding: 0 25px 25px; position: relative; margin-bottom: 32px; border-bottom: 12px solid var(--library-shelf); box-shadow: 0 12px 15px var(--book-shadow); }
+.library-book { height: auto; padding: 0; display: flex; flex-direction: column; gap: 10px; white-space: normal; border-radius: 0; background: transparent; color: var(--foreground); position: relative; }
+.library-book:hover { background: transparent; }
+.library-cover { position: relative; width: 100%; aspect-ratio: 0.68; background: var(--cover-color); color: var(--cover-foil); border-radius: 2px 5px 5px 2px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px 15px; box-shadow: inset 6px 0 7px var(--book-shadow), inset -2px 0 2px var(--paper-highlight), 6px 8px 12px var(--book-shadow); transition: transform 0.35s ease, box-shadow 0.35s; transform-origin: bottom center; }
+.library-cover::after { content: ""; position: absolute; inset: 0; background-image: url("./assets/paper.jpg"); opacity: 0.1; mix-blend-mode: soft-light; pointer-events: none; }
+.cover-forest { --cover-color: var(--cover-forest); }
+.cover-wine { --cover-color: var(--cover-wine); }
+.cover-sage { --cover-color: var(--cover-sage); }
+.cover-teal { --cover-color: var(--cover-teal); }
+.cover-ochre { --cover-color: var(--cover-ochre); }
+.cover-blue { --cover-color: var(--cover-blue); }
+.cover-border { position: absolute; inset: 9px 8px 9px 12px; border: 1px solid var(--cover-foil); opacity: 0.5; }
+.cover-edition { font-size: 6px; text-align: center; }
+.cover-feather { width: 28px; height: 35px; margin: 15px 0 12px; }
+.library-cover strong { font-family: var(--heading-font); font-size: 23px; font-weight: 500; line-height: 1.1; text-align: center; }
+.cover-ornament { margin: 12px 0; }
+.library-cover small { font-size: 7px; }
+.library-book:hover .library-cover, .library-book:focus-visible .library-cover { transform: translateY(-12px) rotate(-3deg); box-shadow: inset 6px 0 7px var(--book-shadow), 10px 18px 22px var(--book-shadow); }
+.library-book-caption { font-family: var(--heading-font); font-size: 13px; font-style: italic; min-height: 30px; display: flex; align-items: center; }
+.library-book-open { display: flex; align-items: center; gap: 5px; font-size: 8px; color: var(--gold); }
+.library-return { font-size: 11px; }
+.book-flight-layer { position: fixed; inset: 0; z-index: 40; perspective: 1600px; pointer-events: none; }
+.flying-book { position: absolute; transform-origin: left center; transform-style: preserve-3d; }
+.flying-book .library-cover { height: 100%; aspect-ratio: auto; transition: none; }
+.flying-book .library-cover strong { font-size: 32px; }
+.reading-view { animation: reading-arrive 0.6s ease both; }
+@keyframes reading-arrive { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+@media (max-width: 900px) {
+  .library-shelf { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 25px; }
+  .library-shelves { max-width: 650px; }
+}
+@media (max-width: 700px) {
+  .library-view { padding: 28px 20px; }
+  .library-heading h1 { font-size: 42px; }
+  .library-heading p { font-size: 11px; }
+  .library-shelf { padding: 0 5px 20px; gap: 20px 12px; }
+  .library-cover { padding: 16px 12px; }
+  .library-cover strong { font-size: 19px; }
+  .cover-edition { font-size: 5px; }
+  .cover-feather { margin: 9px 0; width: 22px; height: 26px; }
+  .cover-ornament { margin: 8px 0; }
+  .library-book-caption { font-size: 11px; }
+  .library-return { font-size: 0; gap: 0; padding: 6px; }
+  .app-header, .app-footer { padding: 0 8px; }
 }
 .app-header {
   height: 90px;
