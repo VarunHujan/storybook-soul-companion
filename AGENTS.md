@@ -15,3 +15,4 @@
 - Use AI Elements for composing and rendering messages, and keep all live and demo streams behind the same server chat boundary.
 - Persist one conversation as complete AI SDK UI messages in browser storage; no account or cloud transcript is needed.
 - Keep AI providers and request helpers server-only, with complete conversation history supplied on every call.
+- Library covers select a theme and reset the existing single conversation to its first spread; a fixed DOM cover flight animates selection without affecting the Three.js page-turn layer.
